@@ -46,5 +46,5 @@ class TestRoomViewSet:
     def test_room_capacity_is_not_numerical(self):
         room_data = {"name": "Room String", "number_of_people": "five"}
         response = self.client.post(reverse("room-list"), room_data)
-
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Number of people must be an integer." in response.data["error"]

@@ -1,9 +1,10 @@
-from django.core.mail import send_mail
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from django.core.mail import send_mail
 from .models import Room, Reservation
 from .serializers import RoomSerializer, ReservationSerializer
 from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class RoomViewSet(viewsets.ModelViewSet):
@@ -11,7 +12,14 @@ class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
 
     def create(self, request, *args, **kwargs):
-        number_of_people = int(request.data.get("number_of_people"))
+        try:
+            number_of_people = int(request.data.get("number_of_people", 0))
+        except ValueError:
+            return Response(
+                {"error": "Number of people must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if number_of_people <= 0 or number_of_people > 100:
             return Response(
                 {"error": "Number of people must be between 1 and 100."},
@@ -29,7 +37,6 @@ class ReservationViewSet(viewsets.ModelViewSet):
         date_from = request.data.get("date_from")
         date_to = request.data.get("date_to")
         reserved_people = int(request.data.get("reserved_people"))
-        today = datetime.now().date()
 
         try:
             date_from = datetime.strptime(date_from, "%Y-%m-%d").date()
@@ -40,21 +47,15 @@ class ReservationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if date_from < today or date_to < today:
+        if date_from < datetime.now().date() or date_to < date_from:
             return Response(
-                {"error": "Reservation dates cannot be in the past."},
+                {"error": "Invalid reservation dates."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (date_to - date_from).days > 99:
+        if (date_to - date_from) > timedelta(days=99):
             return Response(
                 {"error": "Reservation period cannot exceed 99 days."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if (date_to - date_from).days < 1:
-            return Response(
-                {"error": "Reservation period must be at least one day."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -68,14 +69,6 @@ class ReservationViewSet(viewsets.ModelViewSet):
         except Room.DoesNotExist:
             return Response(
                 {"error": "Room does not exist."}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        if Reservation.objects.filter(
-            room=room, date_to__gte=date_from, date_from__lte=date_to
-        ).exists():
-            return Response(
-                {"error": "Room is not available for the selected dates."},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         reservation = Reservation.objects.create(
