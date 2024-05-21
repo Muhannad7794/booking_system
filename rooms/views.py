@@ -65,6 +65,13 @@ class ReservationViewSet(viewsets.ModelViewSet):
                     {"error": "Requested quantity exceeds room capacity."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            if Reservation.objects.filter(
+                room=room, date_to__gte=date_from, date_from__lte=date_to
+            ).exists():
+                return Response(
+                    {"error": "Room is not available for the selected dates."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         except Room.DoesNotExist:
             return Response(
                 {"error": "Room does not exist."}, status=status.HTTP_404_NOT_FOUND
