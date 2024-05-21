@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from django.core.mail import send_mail
 from .models import Room, Reservation
 from .serializers import RoomSerializer, ReservationSerializer
-from datetime import datetime
 from datetime import datetime, timedelta
 
 
@@ -53,9 +52,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (date_to - date_from) > timedelta(days=99):
+        if date_to == date_from or (date_to - date_from) > timedelta(days=99):
             return Response(
-                {"error": "Reservation period cannot exceed 99 days."},
+                {"error": "Invalid reservation period."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
