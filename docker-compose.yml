@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.8"
 
 services:
   bookingsystem:
@@ -6,13 +6,13 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    
+
     container_name: bookingsystem
     ports:
       - 8000:8000
     volumes:
       - .:/app
-    command: python manage.py runserver 0.0.0.0:8000  
+    command: python manage.py runserver 0.0.0.0:8000
     env_file:
       - ./.env
     depends_on:
