@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 from rooms.models import Room, Reservation
 from datetime import timedelta
 from django.utils import timezone
+from django.core.mail import send_mail
 from unittest.mock import patch, Mock
 import datetime
 
@@ -40,7 +41,8 @@ def reservation_dates():
 class TestReservationViewSet:
     client = APIClient()
 
-    def test_reservation_date_format(self, room, reservation_dates):
+    @patch("django.core.mail.send_mail")
+    def test_create_reservation(self, mock_send_mail, room, reservation_dates):
         reservation_data = {
             "room": room.id,
             "date_from": reservation_dates["tomorrow"].strftime("%Y-%m-%d"),
@@ -51,6 +53,8 @@ class TestReservationViewSet:
         }
         response = self.client.post(reverse("reservation-list"), reservation_data)
         assert response.status_code == status.HTTP_201_CREATED
+        assert Reservation.objects.filter(room=room).exists()
+        mock_send_mail.assert_called_once()
 
     def test_reservation_date_not_numerical(self, room, reservation_dates):
         reservation_data = {
