@@ -5,16 +5,27 @@ from rest_framework.test import APIClient
 from rooms.models import Room, Reservation
 from datetime import timedelta
 from django.utils import timezone
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+import datetime
 
 
-# Fixture for creating a room
+@pytest.fixture(autouse=True)
+def mock_datetime_now(monkeypatch):
+    fixed_date = datetime.datetime(2024, 5, 21)
+
+    class MockDateTime(datetime.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed_date
+
+    monkeypatch.setattr(datetime, "datetime", MockDateTime)
+
+
 @pytest.fixture
 def room(db):
     return Room.objects.create(name="Test Room", number_of_people=10)
 
 
-# Fixture for date management
 @pytest.fixture
 def reservation_dates():
     tomorrow = timezone.now().date() + timedelta(days=1)
@@ -79,7 +90,7 @@ class TestReservationViewSet:
             "reserved_people": 2,
         }
         response = self.client.post(reverse("reservation-list"), reservation_data)
-        assert response.status_code is status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("django.core.mail.send_mail")
     def test_create_reservation(self, mock_send_mail, room, reservation_dates):
