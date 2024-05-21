@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  bookingsystem:
+    image: bookingsystem
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    
+    container_name: bookingsystem
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
+    command: python manage.py runserver 0.0.0.0:8000  
+    env_file:
+      - ./.env
+    depends_on:
+      - rooms-db
+    networks:
+      - bookingsystem-network
+
+  rooms-db:
+    image: mysql:5.7
+    container_name: rooms-db
+    environment:
+      - MYSQL_DATABASE=${NAME}
+      - MYSQL_USER=${USER}
+      - MYSQL_PASSWORD=${PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    ports:
+      - 3309:3306
+    volumes:
+      - ./mysql:/var/lib/mysql
+    networks:
+      - bookingsystem-network
+
+networks:
+  bookingsystem-network:
+    driver: bridge
+
+volumes:
+  mysql:
